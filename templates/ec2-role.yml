@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for IAM role for EC2 access through Session manager
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+Resources:
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: TrustPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Path: /
+      RoleName: !Join ["-", [!Ref StackPrefix, EC2Role]]
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Join ["-", [!Ref StackPrefix, EC2InstanceProfile]]
+      Roles:
+        - !Ref EC2Role
+
+Outputs:
+  EC2InstanceProfile:
+    Description: Session Manager InstanceProfile
+    Value: !Ref EC2InstanceProfile
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, EC2InstanceProfile]]

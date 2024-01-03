@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for Aurora RDS Cluster with Global Database and a primary cluster
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+  GlobalClusterName:
+    Type: String
+    Description: Global RDS Cluster name
+    Default: global-cluster
+
+  PrimaryClusterName:
+    Type: String
+    Description: Aurora primary cluster name
+    Default: primary-cluster
+
+  DBSubnetGroupName:
+    Type: String
+    Description: Subnet group name
+    Default: db-subnet-group
+
+  DBInstanceNameA:
+    Type: String
+    Description: First DB instance name
+    Default: db-instance1
+
+  DBInstanceNameB:
+    Type: String
+    Description: Second DB instance name
+    Default: db-instance2
+
+Resources:
+  AuroraMasterSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Join ["-", [!Ref StackPrefix, db-secret]]
+      Description: Database secret
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "dbadmin"}'
+        GenerateStringKey: "password"
+        ExcludeCharacters: '"@/\'
+        PasswordLength: 16
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for creating db instances
+      DBSubnetGroupName: !Ref DBSubnetGroupName
+      SubnetIds:
+        - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PrivSub2A]] }
+        - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PrivSub2B]] }
+
+  GlobalCluster:
+    Type: "AWS::RDS::GlobalCluster"
+    Properties:
+      GlobalClusterIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref GlobalClusterName]]
+      SourceDBClusterIdentifier: !Ref PrimaryCluster
+
+  PrimaryCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      DBClusterIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref PrimaryClusterName]]
+      Engine: aurora-postgresql
+      EngineVersion: 15.3
+      EngineMode: provisioned
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: .5
+        MaxCapacity: 1
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      MasterUsername:
+        !Join [
+          "",
+          [
+            "{{resolve:secretsmanager:",
+            !Ref AuroraMasterSecret,
+            ":SecretString:username}}",
+          ],
+        ]
+      MasterUserPassword:
+        !Join [
+          "",
+          [
+            "{{resolve:secretsmanager:",
+            !Ref AuroraMasterSecret,
+            ":SecretString:password}}",
+          ],
+        ]
+      Port: 3306
+
+  RDSDBInstanceA:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", a]]
+      DBInstanceIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref DBInstanceNameA]]
+      DBClusterIdentifier: !Ref PrimaryCluster
+      # DBInstanceClass: db.r5.large
+      DBInstanceClass: db.serverless
+      Engine: aurora-postgresql
+      EngineVersion: 15.3
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+
+  RDSDBInstanceB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", b]]
+      DBInstanceIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref DBInstanceNameB]]
+      DBClusterIdentifier: !Ref PrimaryCluster
+      # DBInstanceClass: db.r5.large
+      DBInstanceClass: db.serverless
+      Engine: aurora-postgresql
+      EngineVersion: 15.3
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+
+Outputs:
+  GlobalCluster:
+    Description: Global Cluster Identifier
+    Value: !Ref GlobalCluster

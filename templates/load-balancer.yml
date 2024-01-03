@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template for an Application Load Balancer. It depends on the vpc stack and the ec2 stack.
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+Resources:
+  MyLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+        - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PubSub1A]] }
+        - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PubSub1B]] }
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: "60"
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: true
+      Tags:
+        - Key: Name
+          Value: MyLoadBalancer
+
+  MyTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: MyTargetGroup
+      Protocol: HTTP
+      Port: 80
+      VpcId: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, VPCId]] }
+      TargetType: instance
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: traffic-port
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Targets:
+        - Id: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, InstanceA]] }
+          Port: 80
+        - Id: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, InstanceB]] }
+          Port: 80
+
+  MyListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref MyTargetGroup
+                Weight: 100
+      LoadBalancerArn: !Ref MyLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, VPCName]] }
+      GroupDescription: Allow HTTP and HTTPS traffic
+      Tags:
+        - Key: Name
+          Value: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, VPCName]] }
+      VpcId: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, VPCId]] }
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic from any IP address for HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic from any IP address for HTTPS
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic to any IP address for HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic to any IP address for HTTPS
+
+Outputs:
+  LoadBalancerDNSName:
+    Value: !GetAtt MyLoadBalancer.DNSName
+    Description: DNS name of the created Application Load Balancer
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, ALBDNSName]]

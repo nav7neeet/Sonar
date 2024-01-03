@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for EC2 Launch Template. It depends on the vpc stack.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Description: EC2 instance type for the launch template
+    Default: t2.micro
+
+  StackPrefix:
+    Description: Unique Prefix
+    Type: String
+    Default: stack2
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-079db87dc4c10ac91
+    us-east-2:
+      AMI: ami-0ee4f2271a4df2d7d
+
+Resources:
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Join ["-", [!Ref StackPrefix, ec2-template]]
+      VersionDescription: Initial version
+      LaunchTemplateData:
+        MetadataOptions:
+          HttpTokens: required
+        IamInstanceProfile:
+          Name: !Join ["-", [!Ref StackPrefix, EC2InstanceProfile]]
+        InstanceType: !Ref InstanceType
+        ImageId:
+          Fn::FindInMap:
+            - RegionMap
+            - !Ref "AWS::Region"
+            - AMI
+        SecurityGroupIds:
+          - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, Web]] }
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            sudo su
+            yum update -y
+            yum install httpd -y
+            systemctl start httpd
+            systemctl enable httpd
+            echo -e "<b>Region: ${AWS::Region}</b><br><br>Request handled by server: $(hostname)" > /var/www/html/index.html
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value:
+                  !Join [
+                    "",
+                    [
+                      Fn::ImportValue: !Join ["-", [!Ref StackPrefix, VPCName]],
+                      -web1A,
+                    ],
+                  ]

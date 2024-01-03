@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for secondary cluster in the Aurora Global Database
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+  DBSubnetGroupName:
+    Type: String
+    Description: Subnet group name
+    Default: db-subnet-group
+
+  SecondaryClusterName:
+    Type: String
+    Description: Aurora seondary cluster name
+    Default: secondary-cluster
+
+  DBInstanceNameA:
+    Type: String
+    Description: First DB instance name
+    Default: db-instance1
+
+  DBInstanceNameB:
+    Type: String
+    Description: Second DB instance name
+    Default: db-instance2
+
+  GlobalClusterName:
+    Type: String
+    Description: Global RDS Cluster name
+    Default: global-cluster
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: String
+      DBSubnetGroupName: !Ref DBSubnetGroupName
+      SubnetIds:
+        - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PrivSub2A]] }
+        - { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PrivSub2B]] }
+
+  SecondaryCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      DBClusterIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref SecondaryClusterName]]
+      GlobalClusterIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref GlobalClusterName]]
+      Engine: aurora-postgresql
+      EngineVersion: 15.3
+      EngineMode: provisioned
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: .5
+        MaxCapacity: 1
+      DBSubnetGroupName: !Ref DBSubnetGroup
+
+  RDSDBInstanceA:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", a]]
+      DBInstanceIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref DBInstanceNameA]]
+      DBClusterIdentifier: !Ref SecondaryCluster
+      # DBInstanceClass: db.r5.large
+      DBInstanceClass: db.serverless
+      Engine: aurora-postgresql
+      EngineVersion: 15.3
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+
+  RDSDBInstanceB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", b]]
+      DBInstanceIdentifier:
+        !Join ["-", [!Ref StackPrefix, !Ref DBInstanceNameB]]
+      DBClusterIdentifier: !Ref SecondaryCluster
+      # DBInstanceClass: db.r5.large
+      DBInstanceClass: db.serverless
+      Engine: aurora-postgresql
+      EngineVersion: 15.3
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false

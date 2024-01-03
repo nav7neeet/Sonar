@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for S3 destination bucket for cross-region replication
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+Resources:
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join ["-", [!Ref StackPrefix, bucket-us-east-2]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled

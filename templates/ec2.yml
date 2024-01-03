@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for EC2 instances using an existing launch template
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+Resources:
+  InstanceA:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateName: !Join ["-", [!Ref StackPrefix, ec2-template]]
+        Version: 1
+      SubnetId: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PrivSub1A]] }
+
+  InstanceB:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateName: !Join ["-", [!Ref StackPrefix, ec2-template]]
+        Version: 1
+      SubnetId: { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, PrivSub1B]] }
+
+Outputs:
+  InstanceA:
+    Description: ID of the EC2 instance
+    Value: !Ref InstanceA
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, InstanceA]]
+
+  InstanceB:
+    Description: ID of the EC2 instance
+    Value: !Ref InstanceB
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, InstanceB]]

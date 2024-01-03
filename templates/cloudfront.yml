@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  Template for Amazon CloudFront with Origin group. It depends on the load-balancer
+  stack.
+
+Parameters:
+  ALBDNSOhio:
+    Type: String
+    Description: DNS name of Ohio load balancer
+    Default: app1-l-MyLoa-emDXAnnTgFHq-1764157414.us-east-2.elb.amazonaws.com
+
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: CloudFront Distribution with ALB Origin
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: true
+            QueryStringCacheKeys: [key]
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+          TargetOriginId: originGroupId1
+          ViewerProtocolPolicy: redirect-to-https
+        Enabled: "true"
+        DefaultRootObject: index.html
+        Origins:
+          - DomainName:
+              { Fn::ImportValue: !Join ["-", [!Ref StackPrefix, ALBDNSName]] }
+            Id: north-virginia-load-balancer
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+          - DomainName: !Ref ALBDNSOhio
+            Id: ohio-load-balancer
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+        OriginGroups:
+          Quantity: 1
+          Items:
+            - Id: originGroupId1
+              Members:
+                Items:
+                  - OriginId: north-virginia-load-balancer
+                  - OriginId: ohio-load-balancer
+                Quantity: 2
+              FailoverCriteria:
+                StatusCodes:
+                  Items:
+                    - 500
+                    - 502
+                    - 503
+                    - 504
+                  Quantity: 4
+        PriceClass: PriceClass_100

@@ -1,0 +1,350 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for VPC with public and private subnets
+
+Parameters:
+  VPCName:
+    Type: String
+    Default: sonar
+    Description: VPC Name
+
+  VPCCIDR:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC
+
+  PubSub1ACIDR:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR block for the subnet
+
+  PubSub1BCIDR:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for the subnet
+
+  PubSub1CCIDR:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CIDR block for the subnet
+
+  PrivSub1ACIDR:
+    Type: String
+    Default: 10.0.10.0/24
+    Description: CIDR block for the subnet
+
+  PrivSub2ACIDR:
+    Type: String
+    Default: 10.0.11.0/24
+    Description: CIDR block for the subnet
+
+  PrivSub1BCIDR:
+    Type: String
+    Default: 10.0.12.0/24
+    Description: CIDR block for the subnet
+
+  PrivSub2BCIDR:
+    Type: String
+    Default: 10.0.13.0/24
+    Description: CIDR block for the subnet
+
+  PrivSub1CCIDR:
+    Type: String
+    Default: 10.0.14.0/24
+    Description: CIDR block for the subnet
+
+  PrivSub2CCIDR:
+    Type: String
+    Default: 10.0.15.0/24
+    Description: CIDR block for the subnet
+
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${VPCName}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-igw"
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PubSub1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PubSub1ACIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", a]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PubSub1A"
+
+  PubSub1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PubSub1BCIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", b]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PubSub1B"
+
+  PubSub1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PubSub1CCIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", c]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PubSub1C"
+
+  PrivSub1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivSub1ACIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", a]]
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivSub1A"
+
+  PrivSub2A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivSub2ACIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", a]]
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivSub2A"
+
+  PrivSub1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivSub1BCIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", b]]
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivSub1B"
+
+  PrivSub2B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivSub2BCIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", b]]
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivSub2B"
+
+  PrivSub1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivSub1CCIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", c]]
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivSub1C"
+
+  PrivSub2C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivSub2CCIDR
+      AvailabilityZone: !Join ["", [!Sub "${AWS::Region}", c]]
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivSub2C"
+
+  PubRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PubRouteTable"
+
+  PrivRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-PrivRouteTable"
+
+  PubSub1AAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSub1A
+      RouteTableId: !Ref PubRouteTable
+
+  PubSub1BAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSub1B
+      RouteTableId: !Ref PubRouteTable
+
+  PubSub1CAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSub1C
+      RouteTableId: !Ref PubRouteTable
+
+  PrivSub1AAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivSub1A
+      RouteTableId: !Ref PrivRouteTable
+
+  PrivSub2AAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivSub2A
+      RouteTableId: !Ref PrivRouteTable
+
+  PrivSub1BAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivSub1B
+      RouteTableId: !Ref PrivRouteTable
+
+  PrivSub2BAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivSub2B
+      RouteTableId: !Ref PrivRouteTable
+
+  PrivSub1CAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivSub1C
+      RouteTableId: !Ref PrivRouteTable
+
+  PrivSub2CAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivSub2C
+      RouteTableId: !Ref PrivRouteTable
+
+  InternetRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PubRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  Web:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${VPCName}-Web"
+      GroupDescription: Allow HTTP and HTTPS traffic
+      Tags:
+        - Key: Name
+          Value: !Sub "${VPCName}-Web"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic from any IP address for HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic from any IP address for HTTPS
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic to any IP address for HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow traffic to any IP address for HTTPS
+
+Outputs:
+  VPCId:
+    Description: ID of the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, VPCId]]
+
+  VPCName:
+    Description: VPC Name
+    Value: !Ref VPCName
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, VPCName]]
+
+  Web:
+    Description: Web Security Group
+    Value: !Ref Web
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, Web]]
+
+  PubSub1A:
+    Description: Public Subnet1A
+    Value: !Ref PubSub1A
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PubSub1A]]
+
+  PubSub1B:
+    Description: Public Subnet1B
+    Value: !Ref PubSub1B
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PubSub1B]]
+
+  PrivSub1A:
+    Description: Private Subnet1A
+    Value: !Ref PrivSub1A
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PrivSub1A]]
+
+  PrivSub1B:
+    Description: Private Subnet1B
+    Value: !Ref PrivSub1B
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PrivSub1B]]
+
+  PrivSub2A:
+    Description: Private Subnet1B
+    Value: !Ref PrivSub2A
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PrivSub2A]]
+
+  PrivSub2B:
+    Description: Private Subnet1B
+    Value: !Ref PrivSub2B
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PrivSub2B]]
+
+  PrivRouteTable:
+    Description: Private route table
+    Value: !Ref PrivRouteTable
+    Export:
+      Name: !Join ["-", [!Ref StackPrefix, PrivRouteTable]]

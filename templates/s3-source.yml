@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Template for S3 source bucket for cross-region replication.
+
+Parameters:
+  StackPrefix:
+    Description: Unique Prefix to associate with the resources
+    Type: String
+
+  ReplicationRoleName:
+    Type: String
+    Description: Name of the IAM role for cross-region replication
+    Default: s3ReplicationRole
+
+Resources:
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join ["-", [!Ref StackPrefix, bucket-us-east-1]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      ReplicationConfiguration:
+        Role: !GetAtt ReplicationRole.Arn
+        Rules:
+          - Id: Rule1
+            Status: Enabled
+            Prefix: ""
+            Destination:
+              Bucket:
+                !Join [
+                  "",
+                  ["arn:aws:s3:::", !Ref StackPrefix, "-bucket-us-east-2"],
+                ]
+
+  ReplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["-", [!Ref StackPrefix, s3ReplicationRole]]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ReplicationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:*
+                # Resource: "*"
+                Resource:
+                  - !Join [
+                      "",
+                      ["arn:aws:s3:::", !Ref StackPrefix, "-bucket-us-east-2"],
+                    ]
+                  - !Join [
+                      "",
+                      [
+                        "arn:aws:s3:::",
+                        !Ref StackPrefix,
+                        "-bucket-us-east-2/*",
+                      ],
+                    ]
+                  - !Join [
+                      "",
+                      ["arn:aws:s3:::", !Ref StackPrefix, "-bucket-us-east-1"],
+                    ]
+                  - !Join [
+                      "",
+                      [
+                        "arn:aws:s3:::",
+                        !Ref StackPrefix,
+                        "-bucket-us-east-1/*",
+                      ],
+                    ]
+
+Outputs:
+  SourceBucketOutput:
+    Description: The name of the source S3 bucket
+    Value: !Ref SourceBucket
+
+  ReplicationRoleOutput:
+    Description: The ARN of the IAM role for cross-region replication
+    Value: !GetAtt ReplicationRole.Arn
