@@ -18,7 +18,7 @@ A Python-based application designed to simplify the deployment, management, and 
 
 ## Features <br>
 **Disaster Resilience and Fault Tolerance** <br>
-The Orchestrator creates an infrastructure that prioritizes disaster resilience and fault tolerance, allowing the application to remain operational in the event of an AWS availability zone or regional failure.
+The application creates an infrastructure that prioritizes disaster resilience and fault tolerance, allowing the application to remain operational in the event of an AWS availability zone or regional failure.
 
 
 **Enhanced Security** <br>
