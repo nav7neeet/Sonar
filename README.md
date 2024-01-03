@@ -24,7 +24,6 @@ The Orchestrator creates an infrastructure that prioritizes disaster resilience 
 **Enhanced Security** <br>
 
 - The application undergoes security scans using Checkov and Semgrep, ensuring that the infrastructure adheres to security best practices.
-Feature-Rich Infrastructure
 - Aurora database secrets are not hardcoded but stored securely in AWS Secrets Manager, adhering to security best practices.
 - Instead of using traditional SSH keys, the application utilizes AWS Systems Manager Session Manager for a more secure means of connecting to EC2 instances.
 ##
